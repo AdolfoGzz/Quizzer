@@ -1,5 +1,5 @@
 import streamlit as st
-import openai as openai
+import openai
 import PyPDF2 as pdf
 
 apiKey=st.text_input("Enter your OpenAI key", "sk-")
