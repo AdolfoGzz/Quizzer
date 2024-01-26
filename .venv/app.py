@@ -1,48 +1,45 @@
 import streamlit as st
+import streamlit_scrollable_textbox as stx
 import openai
-import PyPDF2 as pdf
 
-apiKey=st.text_input("Enter your OpenAI key", "sk-")
-#apiKey="sk-<your-key>"
+# Set OpenAI API key
+openai.api_key = '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'
 
-st.title("Quiz creation app")
-st.write("This is a quiz creation app. You can create a quiz based on a pdf file, and choose how many questions.")
+st.set_page_config(page_title='Personal Assistant', page_icon='👩‍💻', layout="centered")
 
-uploaded_file = st.file_uploader("Upload a file", type=("pdf"))
-question=st.slider("Select the number of questions", 1, 30, 10)
+st.title("Google Calendar Personal Assistant")
+st.write("This is a demo of the Google Calendar Personal Assistant. It is a tool that helps you manage your calendar by automatically scheduling meetings and events for you. It can also help you find the best time to schedule a meeting with someone else.")
 
-if st.button("Create quiz"):
-    try:
-        pdf.PdfReader(uploaded_file)
-    except:
-        st.write("Waiting for correct file upload...")
-    else:
-        file=pdf.PdfReader(uploaded_file)
-        completeText=""
-        for page in range(len(file.pages)):
-            page=file.pages[page]
-            text=page.extract_text()
-            completeText=completeText+"\n"+text
-    
-        openai.api_key = apiKey
-        response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo-16k",
+# List to store conversation history
+conversation_history = []
+
+# Function to schedule events using AI-generated details
+def schedule_event(user_input):
+    # Generate event details using OpenAI's GPT-3 model
+    prompt = f"Schedule event:\n{user_input}\nEvent name: [Event Name]\nEvent date: [Event Date]\nEvent timeframe: [Event Timeframe]\nEvent location: [Event Location]\nEvent priority: [Event Priority]\n"
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",  # Use an up-to-date model name
         messages=[
-        {
-        "role": "system",
-        "content": "When I provide you a text and an amount of questions at the end, I need you to create a 4 choice quiz, in the same language as the text, based on the text with the amount of questions I gave. Add the correct answers at the end of the quiz."
-        },
-        {
-        "role": "user",
-        "content": f"{completeText}\n\nQuestions: {question}"
-        },
-        
-        ],
-        max_tokens=8192,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0
-        )
-        
-        print(response.choices[0])
-        st.write(response.choices[0].message.content)
+            {"role": "system", "content": "You are an AI powered calendar assistant. Given a user's input, you will generate the details of an event and schedule it on their calendar. Return only the generated event information. Return event name, description, date considering today is January 25 2024, timeframe, location considering the user lives in the center of Mexico City, and priority."},
+            {"role": "user", "content": user_input}
+        ]
+    )
+    return response.choices[0].message['content'].strip()
+
+# Text area for user input
+user_input = st.text_input("You:", "")
+
+if st.button("Ask Assistant"):
+    # Schedule event based on user input
+    assistant_response = schedule_event(user_input)
+    
+    # Append user and assistant messages to the conversation history
+    conversation_history.append(("👤 You", user_input))
+    conversation_history.append(("👩‍💻 Assistant", assistant_response))
+    
+    # Clear user input after asking the assistant
+    user_input = ""
+
+# Scrollable text box
+conversation_text = '\n\n'.join([f"{speaker}: \n {message}" for speaker, message in conversation_history])
+stx.scrollableTextbox(conversation_text, height=400)
